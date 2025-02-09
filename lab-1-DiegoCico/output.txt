@@ -1,0 +1,10 @@
+ls
+pwd
+mkdir test
+rm test
+touch output.txt
+cat output.txt
+date
+echo "Hello, World!"
+git --version
+du -h

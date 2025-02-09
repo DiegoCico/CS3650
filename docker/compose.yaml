@@ -1,0 +1,17 @@
+services:
+  cs3650:
+    image: 'ferd35/cs3650:sp25'
+    platform: linux/amd64
+    working_dir: /home/ubuntu
+    user: ubuntu
+    pull_policy: always
+    privileged: true
+    volumes:
+      - type: bind
+        source: ..
+        target: /home/ubuntu
+    init: true
+    stdin_open: true
+    tty: true
+    hostname: cs3650
+    command: sleep infinity

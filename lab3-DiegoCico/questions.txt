@@ -1,0 +1,74 @@
+
+
+Experiment 1
+------------
+
+What is the initial value of the stack pointer (%rsp)?
+- 0x7fffffffd6e8
+
+How many bytes were added to the stack after the three pushq instructions?
+- 24
+
+What is in %rax after the first popq instruction?
+- 4195638
+
+What is on the top of the stack now (value at %rsp)?
+- 0xf7a317e5
+
+What is the item right below the top of the stack (value at %rsp+8)?
+- 0xf7b8d208
+
+What is in %rbx after the second popq instruction?
+- 0 
+
+Experiment 2
+------------
+
+Where does the .text section start?
+- 0x400536
+
+Where does the .data section start?
+- 0x000000000060101c
+
+What are the addresses of the labels in the .data section?
+- 0x601020
+
+What are the contents of stuff?
+- 1, 2, 3, 4, 5, 6, 7, 8
+
+What is the 5th element of stuff?
+- 5
+
+Experiment 3
+------------
+
+What is on top of the stack when inside dummy1?
+- 0x7fffffffd6e0: 0x00400550
+
+What is the address of the top of the stack relative to its value in main?
+- 0x7fffffffd6e8 - 0x7fffffffd6e0 = 0x8
+
+What is the current stack pointer after returning to main?
+- 0x7fffffffd6e8
+
+What is the return address, and how does it compare to $after_dummy1?
+- 0x00400550
+ 
+
+Experiment 4
+------------
+
+What is the state of %rsp and %rbp before setting up the stack frame?
+- %rsp: 0x7fffffffd6d8
+- %rbp: 0x7fffffffd6e0
+
+What is the state of %rsp and %rbp after setting up the stack frame with enter $0, $0?
+- %rsp: 0x7fffffffd6d0
+- %rbp: 0x7fffffffd6d0
+
+What is the state of %rsp and %rbp after destroying the stack frame with leave?
+- %rsp: 0x7fffffffd6e8
+- %rbp: 0x7fffffffd6e0
+
+How does %rsp change when allocating 8, 16, and 32 bytes?
+- the number decreses  
