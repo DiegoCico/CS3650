@@ -4,10 +4,7 @@
 #include <unistd.h>     // for fork(), execvp()
 #include <sys/types.h>
 #include <sys/wait.h>
-#include "tokenizer.h"  // Provides MAX_INPUT and prototype for tokenize().
-
-// Include the tokenize() implementation so that shell.o contains its definition.
-#include "tokenize.c"
+#include "tokenizer.h"  // Provides MAX_INPUT and prototype for tokenize()
 
 int main(int argc, char **argv) {
     char line[MAX_INPUT];
@@ -15,23 +12,19 @@ int main(int argc, char **argv) {
     printf("Welcome to mini-shell.\n");
 
     while (1) {
-        // Print the prompt.
         printf("shell $ ");
         fflush(stdout);
 
-        // Read a line from standard input.
         if (fgets(line, MAX_INPUT, stdin) == NULL) {
             printf("\nBye bye.\n");
             break;
         }
 
-        // Remove the trailing newline.
         line[strcspn(line, "\n")] = '\0';
 
         if (strlen(line) == 0)
             continue;
 
-        // Tokenize the input.
         int numTokens = 0;
         char **tokens = tokenize(line, &numTokens);
         if (numTokens == 0) {
@@ -39,7 +32,7 @@ int main(int argc, char **argv) {
             continue;
         }
 
-        // Process commands separated by semicolons.
+        /* Process commands separated by semicolons */
         int start = 0;
         while (start < numTokens) {
             int end = start;
@@ -49,7 +42,6 @@ int main(int argc, char **argv) {
 
             if (end - start > 0) {
                 int cmdArgCount = end - start;
-                // Create a NULL-terminated array of arguments.
                 char **cmdArgs = malloc((cmdArgCount + 1) * sizeof(char *));
                 if (!cmdArgs) {
                     perror("malloc");
@@ -60,7 +52,6 @@ int main(int argc, char **argv) {
                 }
                 cmdArgs[cmdArgCount] = NULL;
 
-                // If the command is "exit", then exit the shell.
                 if (strcmp(cmdArgs[0], "exit") == 0) {
                     free(cmdArgs);
                     for (int i = 0; i < numTokens; i++) {
@@ -71,7 +62,6 @@ int main(int argc, char **argv) {
                     exit(0);
                 }
 
-                // Fork a child process to execute the command.
                 pid_t pid = fork();
                 if (pid < 0) {
                     perror("fork");
@@ -90,7 +80,6 @@ int main(int argc, char **argv) {
             start = end + 1;
         }
 
-        // Free all tokens.
         for (int i = 0; i < numTokens; i++) {
             free(tokens[i]);
         }
