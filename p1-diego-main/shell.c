@@ -1,16 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>     // for fork(), execvp(), chdir()
+#include <unistd.h>    
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <fcntl.h>
-#include "tokenizer.h"  // Provides MAX_INPUT and the prototype for tokenize()
+#include "tokenizer.h"  
 
-/* Global variable to hold the previous command line */
 char *prevCommand = NULL;
 
-/* Print help message for built-in commands */
 void print_help() {
     printf("Built-in commands:\n");
     printf("  cd <dir>      : change directory\n");
@@ -103,7 +101,7 @@ int run_builtin(char **args) {
     return 0;
 }
 
-/* Execute an external command with possible input (<) and output (>) redirection */
+/* Execute command with possible input (<) and output (>) redirection */
 void execute_external(char **args) {
     char *infile = NULL;
     char *outfile = NULL;
@@ -121,7 +119,7 @@ void execute_external(char **args) {
         if (strcmp(args[i], "<") == 0) {
             if (i + 1 < count) {
                 infile = args[i + 1];
-                i++;  // skip filename
+                i++; 
             } else {
                 fprintf(stderr, "Error: no input file specified\n");
                 break;
@@ -129,7 +127,7 @@ void execute_external(char **args) {
         } else if (strcmp(args[i], ">") == 0) {
             if (i + 1 < count) {
                 outfile = args[i + 1];
-                i++;  // skip filename
+                i++;  
             } else {
                 fprintf(stderr, "Error: no output file specified\n");
                 break;
@@ -174,7 +172,6 @@ void execute_external(char **args) {
     free(new_args);
 }
 
-/* Execute a command with a pipe (only one pipe supported) */
 void execute_pipe(char **args) {
     int i, count = 0, pipeIndex = -1;
     while (args[count] != NULL)
@@ -189,7 +186,7 @@ void execute_pipe(char **args) {
         execute_external(args);
         return;
     }
-    args[pipeIndex] = NULL;  // Split the array into two commands.
+    args[pipeIndex] = NULL;  
     char **left_args = args;
     char **right_args = &args[pipeIndex + 1];
 
@@ -243,7 +240,7 @@ void process_command(char **args) {
 }
 
 int main(int argc, char **argv) {
-    printf("Welcome to mini-shell.\n"); // Print welcome message
+    printf("Welcome to mini-shell.\n"); 
     char line[MAX_INPUT];
     while (1) {
         printf("shell $ ");
@@ -252,7 +249,6 @@ int main(int argc, char **argv) {
             printf("\nBye bye.\n");
             break;
         }
-        /* Save command for "prev" built-in */
         if (prevCommand) {
             free(prevCommand);
         }

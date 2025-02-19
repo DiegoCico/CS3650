@@ -7,7 +7,6 @@
 /* 
  * tokenize() splits the input string into tokens.
  * Special tokens: ( ) < > ; |
- * Quoted strings (inside double quotes) are taken as a single token.
  */
 char **tokenize(const char *input, int *numTokens) {
     int tokensCapacity = 10;
@@ -19,7 +18,7 @@ char **tokenize(const char *input, int *numTokens) {
     }
 
     enum { STATE_NONE, STATE_IN_WORD, STATE_IN_QUOTE } state = STATE_NONE;
-    const char *start = NULL;  /* pointer to the beginning of the current token */
+    const char *start = NULL;  
     char *token = NULL;
     int i = 0;
     int len = strlen(input);
@@ -29,14 +28,13 @@ char **tokenize(const char *input, int *numTokens) {
         switch (state) {
             case STATE_NONE:
                 if (isspace(c)) {
-                    i++;  /* Skip whitespace */
+                    i++; 
                 } else if (c == '"') {
                     state = STATE_IN_QUOTE;
-                    start = input + i + 1;  /* Skip the opening quote */
+                    start = input + i + 1;  
                     i++;
                 } else if (c == '(' || c == ')' || c == '<' ||
                            c == '>' || c == ';' || c == '|') {
-                    /* Single-character token */
                     token = malloc(2);
                     if (!token) {
                         perror("malloc");
@@ -62,7 +60,6 @@ char **tokenize(const char *input, int *numTokens) {
                 break;
 
             case STATE_IN_WORD:
-                /* End word when whitespace, special token, or a quote is encountered */
                 if (isspace(c) || c == '(' || c == ')' || c == '<' ||
                     c == '>' || c == ';' || c == '|' || c == '"') {
                     int tokenLen = (input + i) - start;
@@ -83,7 +80,6 @@ char **tokenize(const char *input, int *numTokens) {
                     }
                     tokens[tokensSize++] = token;
                     state = STATE_NONE;
-                    /* Do not increment i here; the special character will be processed next */
                 } else {
                     i++;
                 }
@@ -109,7 +105,7 @@ char **tokenize(const char *input, int *numTokens) {
                     }
                     tokens[tokensSize++] = token;
                     state = STATE_NONE;
-                    i++;  /* Skip the closing quote */
+                    i++;  
                 } else {
                     i++;
                 }
@@ -117,7 +113,6 @@ char **tokenize(const char *input, int *numTokens) {
         }
     }
 
-    /* If ended while still in a word, flush it */
     if (state == STATE_IN_WORD) {
         int tokenLen = (input + i) - start;
         token = malloc(tokenLen + 1);

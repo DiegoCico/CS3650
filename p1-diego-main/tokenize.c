@@ -5,7 +5,6 @@
 
 int main(int argc, char **argv) {
     char input[MAX_INPUT];
-    /* Do not print a prompt, so that output matches test expectations */
     if (fgets(input, MAX_INPUT, stdin) == NULL) {
         return 1;
     }
