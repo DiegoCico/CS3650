@@ -5,7 +5,11 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <fcntl.h>
-#include "tokenizer.h"  
+#include "tokenizer.h"
+
+#ifndef MAX_INPUT
+#define MAX_INPUT 1024
+#endif
 
 char *prevCommand = NULL;
 
@@ -16,6 +20,63 @@ void print_help() {
     printf("  prev          : re-execute the previous command\n");
     printf("  help          : display this help message\n");
     printf("  exit          : exit the shell\n");
+}
+
+void setup_redirection_and_exec(char **args) {
+    char *infile = NULL;
+    char *outfile = NULL;
+    int count = 0, i = 0, j = 0;
+    while (args[count] != NULL)
+        count++;
+    char **new_args = malloc((count + 1) * sizeof(char *));
+    if (!new_args) {
+        perror("malloc");
+        exit(EXIT_FAILURE);
+    }
+    for (i = 0; i < count; i++) {
+        if (strcmp(args[i], "<") == 0) {
+            if (i + 1 < count) {
+                infile = args[i + 1];
+                i++;  
+            } else {
+                fprintf(stderr, "Error: no input file specified\n");
+                exit(EXIT_FAILURE);
+            }
+        } else if (strcmp(args[i], ">") == 0) {
+            if (i + 1 < count) {
+                outfile = args[i + 1];
+                i++;  
+            } else {
+                fprintf(stderr, "Error: no output file specified\n");
+                exit(EXIT_FAILURE);
+            }
+        } else {
+            new_args[j++] = args[i];
+        }
+    }
+    new_args[j] = NULL;
+
+    if (infile != NULL) {
+        int fd = open(infile, O_RDONLY);
+        if (fd < 0) {
+            perror("open infile");
+            exit(EXIT_FAILURE);
+        }
+        dup2(fd, STDIN_FILENO);
+        close(fd);
+    }
+    if (outfile != NULL) {
+        int fd = open(outfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (fd < 0) {
+            perror("open outfile");
+            exit(EXIT_FAILURE);
+        }
+        dup2(fd, STDOUT_FILENO);
+        close(fd);
+    }
+    execvp(new_args[0], new_args);
+    fprintf(stderr, "%s: command not found\n", new_args[0]);
+    exit(EXIT_FAILURE);
 }
 
 /* Run built-in commands. Return 1 if a built-in was executed, 0 otherwise */
@@ -55,7 +116,7 @@ int run_builtin(char **args) {
                     if (numTokens > 0) {
                         pid_t pid = fork();
                         if (pid == 0) {
-                            execvp(tokens[0], tokens);
+                            setup_redirection_and_exec(tokens);
                             fprintf(stderr, "%s: command not found\n", tokens[0]);
                             exit(EXIT_FAILURE);
                         } else if (pid > 0) {
@@ -81,7 +142,7 @@ int run_builtin(char **args) {
             char **tokens = tokenize(prevCommand, &numTokens);
             pid_t pid = fork();
             if (pid == 0) {
-                execvp(tokens[0], tokens);
+                setup_redirection_and_exec(tokens);
                 fprintf(stderr, "%s: command not found\n", tokens[0]);
                 exit(EXIT_FAILURE);
             } else if (pid > 0) {
@@ -101,77 +162,23 @@ int run_builtin(char **args) {
     return 0;
 }
 
-/* Execute command with possible input (<) and output (>) redirection */
+/* Execute an external command (with redirection tokens, if any) */
 void execute_external(char **args) {
-    char *infile = NULL;
-    char *outfile = NULL;
-    int i, j;
-    int count = 0;
-    while (args[count] != NULL)
-        count++;
-    char **new_args = malloc((count + 1) * sizeof(char *));
-    if (!new_args) {
-        perror("malloc");
-        exit(EXIT_FAILURE);
-    }
-    j = 0;
-    for (i = 0; i < count; i++) {
-        if (strcmp(args[i], "<") == 0) {
-            if (i + 1 < count) {
-                infile = args[i + 1];
-                i++; 
-            } else {
-                fprintf(stderr, "Error: no input file specified\n");
-                break;
-            }
-        } else if (strcmp(args[i], ">") == 0) {
-            if (i + 1 < count) {
-                outfile = args[i + 1];
-                i++;  
-            } else {
-                fprintf(stderr, "Error: no output file specified\n");
-                break;
-            }
-        } else {
-            new_args[j++] = args[i];
-        }
-    }
-    new_args[j] = NULL;
-
     pid_t pid = fork();
     if (pid < 0) {
         perror("fork");
-        free(new_args);
         exit(EXIT_FAILURE);
     } else if (pid == 0) {
-        if (infile != NULL) {
-            int fd = open(infile, O_RDONLY);
-            if (fd < 0) {
-                perror("open infile");
-                exit(EXIT_FAILURE);
-            }
-            dup2(fd, STDIN_FILENO);
-            close(fd);
-        }
-        if (outfile != NULL) {
-            int fd = open(outfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-            if (fd < 0) {
-                perror("open outfile");
-                exit(EXIT_FAILURE);
-            }
-            dup2(fd, STDOUT_FILENO);
-            close(fd);
-        }
-        execvp(new_args[0], new_args);
-        fprintf(stderr, "%s: command not found\n", new_args[0]);
+        setup_redirection_and_exec(args);
+        fprintf(stderr, "%s: command not found\n", args[0]);
         exit(EXIT_FAILURE);
     } else {
         int status;
         waitpid(pid, &status, 0);
     }
-    free(new_args);
 }
 
+/* Execute commands with a pipe, handling redirection on both sides */
 void execute_pipe(char **args) {
     int i, count = 0, pipeIndex = -1;
     while (args[count] != NULL)
@@ -203,7 +210,7 @@ void execute_pipe(char **args) {
         dup2(fd[1], STDOUT_FILENO);
         close(fd[0]);
         close(fd[1]);
-        execvp(left_args[0], left_args);
+        setup_redirection_and_exec(left_args);
         fprintf(stderr, "%s: command not found\n", left_args[0]);
         exit(EXIT_FAILURE);
     }
@@ -215,7 +222,7 @@ void execute_pipe(char **args) {
         dup2(fd[0], STDIN_FILENO);
         close(fd[0]);
         close(fd[1]);
-        execvp(right_args[0], right_args);
+        setup_redirection_and_exec(right_args);
         fprintf(stderr, "%s: command not found\n", right_args[0]);
         exit(EXIT_FAILURE);
     }
@@ -240,7 +247,7 @@ void process_command(char **args) {
 }
 
 int main(int argc, char **argv) {
-    printf("Welcome to mini-shell.\n"); 
+    printf("Welcome to mini-shell.\n");
     char line[MAX_INPUT];
     while (1) {
         printf("shell $ ");
@@ -249,13 +256,16 @@ int main(int argc, char **argv) {
             printf("\nBye bye.\n");
             break;
         }
-        if (prevCommand) {
-            free(prevCommand);
-        }
-        prevCommand = strdup(line);
         line[strcspn(line, "\n")] = '\0';
         if (strlen(line) == 0)
             continue;
+
+        if (strcmp(line, "prev") != 0) {
+            if (prevCommand)
+                free(prevCommand);
+            prevCommand = strdup(line);
+        }
+
         int numTokens = 0;
         char **tokens = tokenize(line, &numTokens);
         if (numTokens == 0) {
