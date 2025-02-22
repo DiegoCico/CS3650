@@ -13,15 +13,6 @@
 
 char *prevCommand = NULL;
 
-void print_help() {
-    printf("Built-in commands:\n");
-    printf("  cd <dir>      : change directory\n");
-    printf("  source <file> : execute commands from a script file\n");
-    printf("  prev          : re-execute the previous command\n");
-    printf("  help          : display this help message\n");
-    printf("  exit          : exit the shell\n");
-}
-
 void setup_redirection_and_exec(char **args) {
     char *infile = NULL;
     char *outfile = NULL;
@@ -94,10 +85,6 @@ int run_builtin(char **args) {
             if (chdir(args[1]) != 0)
                 perror("chdir");
         }
-        return 1;
-    }
-    if (strcmp(args[0], "help") == 0) {
-        print_help();
         return 1;
     }
     if (strcmp(args[0], "source") == 0) {

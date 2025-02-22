@@ -2,7 +2,7 @@
 .global array_max
 
 array_max:
-    # rdi = n (number of items), rsi = array pointer
+    # rdi = n (numb er of items), rsi = array pointer
 
     # If n == 0, return 0
     testq %rdi, %rdi        # Check if n == 0
