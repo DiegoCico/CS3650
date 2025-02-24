@@ -39,20 +39,20 @@ valid_args:
     mov 8(%r15), %rdi
     xor %rsi, %rsi
     xor %rdx, %rdx
-    call strtol@plt
+    call strtol
     mov %rax, %r12
 
     # Convert second argument
     mov 16(%r15), %rdi
     xor %rsi, %rsi
     xor %rdx, %rdx
-    call strtol@plt
+    call strtol
     mov %rax, %r13
 
     # Call crunch function
     mov %r12, %rdi
     mov %r13, %rsi
-    call crunch@plt
+    call crunch
     mov %rax, %r14
 
     # Decide what to print
