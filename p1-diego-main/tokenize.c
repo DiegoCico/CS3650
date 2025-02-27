@@ -1,20 +1,25 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include "tokenizer.h"
+#include "tokenizer.h" 
 
-int main(int argc, char **argv) {
+int main(void) {
     char input[MAX_INPUT];
-    if (fgets(input, MAX_INPUT, stdin) == NULL) {
+    char tokens[MAX_TOKENS][MAX_INPUT];
+    int numTokens = 0;
+
+    // Read one line from stdin into input 
+    if (!fgets(input, sizeof(input), stdin)) {
         return 1;
     }
+
+    // Remove any trailing from the input
     input[strcspn(input, "\n")] = '\0';
-    int numTokens = 0;
-    char **tokens = tokenize(input, &numTokens);
+
+    // writes each token into a 2D array of tokens
+    tokenize(input, tokens, &numTokens);
     for (int i = 0; i < numTokens; i++) {
         printf("%s\n", tokens[i]);
-        free(tokens[i]);
     }
-    free(tokens);
+
     return 0;
 }

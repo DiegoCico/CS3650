@@ -1,14 +1,9 @@
 #ifndef TOKENIZER_H
 #define TOKENIZER_H
 
-/* Maximum input size (must be at least 255 characters) */
 #define MAX_INPUT 512
+#define MAX_TOKENS 128
 
-/* 
- * Prototype for the tokenize() function.
- * Given an input string, tokenize() returns an array of tokens.
- * The number of tokens is stored in *numTokens.
- */
-char **tokenize(const char *input, int *numTokens);
+void tokenize(const char *input, char tokens[][MAX_INPUT], int *numTokens);
 
-#endif /* TOKENIZER_H */
+#endif 

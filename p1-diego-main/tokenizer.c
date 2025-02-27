@@ -4,136 +4,76 @@
 #include <ctype.h>
 #include "tokenizer.h"
 
-/* 
- * tokenize() splits the input string into tokens.
- * Special tokens: ( ) < > ; |
- */
-char **tokenize(const char *input, int *numTokens) {
-    int tokensCapacity = 10;
-    int tokensSize = 0;
-    char **tokens = malloc(tokensCapacity * sizeof(char *));
-    if (!tokens) {
-        perror("malloc");
-        exit(EXIT_FAILURE);
-    }
+// Check if a character is a special shell token. 
+static int is_special_token(char ch) {
+    return (ch == '(' || ch == ')' || ch == '<' ||
+            ch == '>' || ch == ';' || ch == '|');
+}
 
-    enum { STATE_NONE, STATE_IN_WORD, STATE_IN_QUOTE } state = STATE_NONE;
-    const char *start = NULL;  
-    char *token = NULL;
+
+ // Read a word with no special character
+ // Returns the number of characters read. 
+static int read_word(const char *input, char *output) {
+    int i = 0;
+    while (input[i] != '\0' &&
+           !isspace((unsigned char)input[i]) &&
+           !is_special_token(input[i])) 
+    {
+        output[i] = input[i];
+        i++;
+    }
+    output[i] = '\0';
+    return i;
+}
+
+ // Read a quoted string
+ // Returns the total number of characters
+static int read_quoted_string(const char *input, char *output) {
+    int i = 0;
+    while (input[i] != '\0' && input[i] != '"') {
+        output[i] = input[i];
+        i++;
+    }
+    output[i] = '\0';
+    
+    if (input[i] == '"') {
+        i++;
+    }
+    return i;
+}
+
+void tokenize(const char *input, char tokens[][MAX_INPUT], int *numTokens) {
     int i = 0;
     int len = strlen(input);
+    *numTokens = 0;
 
     while (i < len) {
-        char c = input[i];
-        switch (state) {
-            case STATE_NONE:
-                if (isspace(c)) {
-                    i++; 
-                } else if (c == '"') {
-                    state = STATE_IN_QUOTE;
-                    start = input + i + 1;  
-                    i++;
-                } else if (c == '(' || c == ')' || c == '<' ||
-                           c == '>' || c == ';' || c == '|') {
-                    token = malloc(2);
-                    if (!token) {
-                        perror("malloc");
-                        exit(EXIT_FAILURE);
-                    }
-                    token[0] = c;
-                    token[1] = '\0';
-                    if (tokensSize >= tokensCapacity) {
-                        tokensCapacity *= 2;
-                        tokens = realloc(tokens, tokensCapacity * sizeof(char *));
-                        if (!tokens) {
-                            perror("realloc");
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-                    tokens[tokensSize++] = token;
-                    i++;
-                } else {
-                    state = STATE_IN_WORD;
-                    start = input + i;
-                    i++;
-                }
-                break;
-
-            case STATE_IN_WORD:
-                if (isspace(c) || c == '(' || c == ')' || c == '<' ||
-                    c == '>' || c == ';' || c == '|' || c == '"') {
-                    int tokenLen = (input + i) - start;
-                    token = malloc(tokenLen + 1);
-                    if (!token) {
-                        perror("malloc");
-                        exit(EXIT_FAILURE);
-                    }
-                    strncpy(token, start, tokenLen);
-                    token[tokenLen] = '\0';
-                    if (tokensSize >= tokensCapacity) {
-                        tokensCapacity *= 2;
-                        tokens = realloc(tokens, tokensCapacity * sizeof(char *));
-                        if (!tokens) {
-                            perror("realloc");
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-                    tokens[tokensSize++] = token;
-                    state = STATE_NONE;
-                } else {
-                    i++;
-                }
-                break;
-
-            case STATE_IN_QUOTE:
-                if (c == '"') {
-                    int tokenLen = (input + i) - start;
-                    token = malloc(tokenLen + 1);
-                    if (!token) {
-                        perror("malloc");
-                        exit(EXIT_FAILURE);
-                    }
-                    strncpy(token, start, tokenLen);
-                    token[tokenLen] = '\0';
-                    if (tokensSize >= tokensCapacity) {
-                        tokensCapacity *= 2;
-                        tokens = realloc(tokens, tokensCapacity * sizeof(char *));
-                        if (!tokens) {
-                            perror("realloc");
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-                    tokens[tokensSize++] = token;
-                    state = STATE_NONE;
-                    i++;  
-                } else {
-                    i++;
-                }
-                break;
+        // no white spaces
+        if (isspace((unsigned char)input[i])) {
+            i++;
+            continue;
         }
+
+        // exeding maximun token
+        if (*numTokens >= MAX_TOKENS) {
+            fprintf(stderr, "Warning: too many tokens (max %d). Some will be truncated.\n", MAX_TOKENS);
+            return;
+        }
+
+        if (input[i] == '"') {
+            i++; 
+            i += read_quoted_string(&input[i], tokens[*numTokens]);
+        }
+        else if (is_special_token(input[i])) {
+            // check if it is a special characyer
+            tokens[*numTokens][0] = input[i];
+            tokens[*numTokens][1] = '\0';
+            i++;
+        }
+        else {
+            // read if it is a not special word
+            i += read_word(&input[i], tokens[*numTokens]);
+        }
+        (*numTokens)++;
     }
-
-    if (state == STATE_IN_WORD) {
-        int tokenLen = (input + i) - start;
-        token = malloc(tokenLen + 1);
-        if (!token) {
-            perror("malloc");
-            exit(EXIT_FAILURE);
-        }
-        strncpy(token, start, tokenLen);
-        token[tokenLen] = '\0';
-        if (tokensSize >= tokensCapacity) {
-            tokensCapacity *= 2;
-            tokens = realloc(tokens, tokensCapacity * sizeof(char *));
-            if (!tokens) {
-                perror("realloc");
-                exit(EXIT_FAILURE);
-            }
-        }
-        tokens[tokensSize++] = token;
-    }
-
-    tokens = realloc(tokens, tokensSize * sizeof(char *));
-    *numTokens = tokensSize;
-    return tokens;
 }

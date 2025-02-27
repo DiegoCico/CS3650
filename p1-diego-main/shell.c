@@ -1,290 +1,238 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>    
+#include <unistd.h>
+#include <ctype.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <fcntl.h>
 #include "tokenizer.h"
 
-#ifndef MAX_INPUT
-#define MAX_INPUT 1024
-#endif
+static char prevCommand[MAX_INPUT] = "";
 
-char *prevCommand = NULL;
+// Searches PATH for 'file' and calls execv to run it. If 'file' has '/', use it directly.
+static void runProgram(char *file, char *argv[]) {
+    if (strchr(file, '/')) {
+        execv(file, argv);
+        perror("execv");
+        _exit(1);
+    }
+    char *pathEnv = getenv("PATH");
+    if (!pathEnv) {
+        char *fallback = "/bin:/usr/bin";
+        pathEnv = fallback;
+    }
+    char buf[2048];
+    strncpy(buf, pathEnv, sizeof(buf) - 1);
+    buf[sizeof(buf) - 1] = '\0';
+    for (char *dir = strtok(buf, ":"); dir; dir = strtok(NULL, ":")) {
+        char candidate[2048];
+        snprintf(candidate, sizeof(candidate), "%s/%s", dir, file);
+        // execv loads and runs a new program from a path that we gave. If it works, doesn't returns.
+        execv(candidate, argv);
+    }
+    fprintf(stderr, "%s: command not found\n", file);
+    _exit(1);
+}
 
-void setup_redirection_and_exec(char **args) {
+// Sets up < and > redirection, then calls runProgram to start the command.
+static void runRedirectExec(char *argv[]) {
     char *infile = NULL;
     char *outfile = NULL;
-    int count = 0, i = 0, j = 0;
-    while (args[count] != NULL)
-        count++;
-    char **new_args = malloc((count + 1) * sizeof(char *));
-    if (!new_args) {
-        perror("malloc");
-        exit(EXIT_FAILURE);
-    }
-    for (i = 0; i < count; i++) {
-        if (strcmp(args[i], "<") == 0) {
-            if (i + 1 < count) {
-                infile = args[i + 1];
-                i++;  
-            } else {
-                fprintf(stderr, "Error: no input file specified\n");
-                exit(EXIT_FAILURE);
-            }
-        } else if (strcmp(args[i], ">") == 0) {
-            if (i + 1 < count) {
-                outfile = args[i + 1];
-                i++;  
-            } else {
-                fprintf(stderr, "Error: no output file specified\n");
-                exit(EXIT_FAILURE);
-            }
+    char *newArgs[MAX_TOKENS];
+    int i = 0, j = 0;
+    while (argv[i]) {
+        if (strcmp(argv[i], "<") == 0) {
+            infile = argv[i + 1];
+            i += 2;
+        } else if (strcmp(argv[i], ">") == 0) {
+            outfile = argv[i + 1];
+            i += 2;
         } else {
-            new_args[j++] = args[i];
+            newArgs[j++] = argv[i++];
         }
     }
-    new_args[j] = NULL;
-
-    if (infile != NULL) {
+    newArgs[j] = NULL;
+    if (infile) {
         int fd = open(infile, O_RDONLY);
         if (fd < 0) {
             perror("open infile");
-            exit(EXIT_FAILURE);
+            _exit(1);
         }
         dup2(fd, STDIN_FILENO);
         close(fd);
     }
-    if (outfile != NULL) {
+    if (outfile) {
         int fd = open(outfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
         if (fd < 0) {
             perror("open outfile");
-            exit(EXIT_FAILURE);
+            _exit(1);
         }
         dup2(fd, STDOUT_FILENO);
         close(fd);
     }
-    execvp(new_args[0], new_args);
-    fprintf(stderr, "%s: command not found\n", new_args[0]);
-    exit(EXIT_FAILURE);
+    if (!newArgs[0]) {
+        _exit(0);
+    }
+    runProgram(newArgs[0], newArgs);
+    _exit(1);
 }
 
-/* Run built-in commands. Return 1 if a built-in was executed, 0 otherwise */
-int run_builtin(char **args) {
-    if (args[0] == NULL)
-        return 0;
-    if (strcmp(args[0], "cd") == 0) {
-        if (args[1] == NULL) {
-            char *home = getenv("HOME");
-            if (home == NULL)
-                home = "/";
-            if (chdir(home) != 0)
-                perror("chdir");
-        } else {
-            if (chdir(args[1]) != 0)
-                perror("chdir");
-        }
-        return 1;
-    }
-    if (strcmp(args[0], "source") == 0) {
-        if (args[1] == NULL) {
-            fprintf(stderr, "source: missing filename\n");
-        } else {
-            FILE *fp = fopen(args[1], "r");
-            if (fp == NULL) {
-                perror("source");
-            } else {
-                char line[MAX_INPUT];
-                while (fgets(line, MAX_INPUT, fp) != NULL) {
-                    line[strcspn(line, "\n")] = '\0';
-                    int numTokens = 0;
-                    char **tokens = tokenize(line, &numTokens);
-                    if (numTokens > 0) {
-                        pid_t pid = fork();
-                        if (pid == 0) {
-                            setup_redirection_and_exec(tokens);
-                            fprintf(stderr, "%s: command not found\n", tokens[0]);
-                            exit(EXIT_FAILURE);
-                        } else if (pid > 0) {
-                            int status;
-                            waitpid(pid, &status, 0);
-                        }
-                    }
-                    for (int j = 0; j < numTokens; j++)
-                        free(tokens[j]);
-                    free(tokens);
-                }
-                fclose(fp);
-            }
-        }
-        return 1;
-    }
-    if (strcmp(args[0], "prev") == 0) {
-        if (prevCommand == NULL) {
-            fprintf(stderr, "prev: no previous command\n");
-        } else {
-            printf("Executing previous command: %s\n", prevCommand);
-            int numTokens = 0;
-            char **tokens = tokenize(prevCommand, &numTokens);
-            pid_t pid = fork();
-            if (pid == 0) {
-                setup_redirection_and_exec(tokens);
-                fprintf(stderr, "%s: command not found\n", tokens[0]);
-                exit(EXIT_FAILURE);
-            } else if (pid > 0) {
-                int status;
-                waitpid(pid, &status, 0);
-            }
-            for (int j = 0; j < numTokens; j++)
-                free(tokens[j]);
-            free(tokens);
-        }
-        return 1;
-    }
-    if (strcmp(args[0], "exit") == 0) {
-        printf("Bye bye.\n");
-        exit(0);
-    }
-    return 0;
-}
-
-/* Execute an external command (with redirection tokens, if any) */
-void execute_external(char **args) {
+// Forks a child to runRedirectExec. Parent waits for the child to finish.
+static void runSimpleCommand(char *argv[]) {
     pid_t pid = fork();
     if (pid < 0) {
         perror("fork");
-        exit(EXIT_FAILURE);
-    } else if (pid == 0) {
-        setup_redirection_and_exec(args);
-        fprintf(stderr, "%s: command not found\n", args[0]);
-        exit(EXIT_FAILURE);
+        return;
+    }
+    if (pid == 0) {
+        runRedirectExec(argv);
+        _exit(1);
     } else {
         int status;
         waitpid(pid, &status, 0);
     }
 }
 
-/* Execute commands with a pipe, handling redirection on both sides */
-void execute_pipe(char **args) {
-    int i, count = 0, pipeIndex = -1;
-    while (args[count] != NULL)
-        count++;
-    for (i = 0; i < count; i++) {
-        if (strcmp(args[i], "|") == 0) {
+// Looks for '|'. If found, split into left/right, create a pipe, fork twice, and runRedirectExec in each.
+static void runPipe(char *argv[]) {
+    int pipeIndex = -1;
+    for (int i = 0; argv[i]; i++) {
+        if (strcmp(argv[i], "|") == 0) {
             pipeIndex = i;
             break;
         }
     }
     if (pipeIndex == -1) {
-        execute_external(args);
+        runSimpleCommand(argv);
         return;
     }
-    args[pipeIndex] = NULL;  
-    char **left_args = args;
-    char **right_args = &args[pipeIndex + 1];
-
+    argv[pipeIndex] = NULL;
+    char **left = argv;
+    char **right = &argv[pipeIndex + 1];
     int fd[2];
-    if (pipe(fd) == -1) {
+    if (pipe(fd) < 0) {
         perror("pipe");
-        exit(EXIT_FAILURE);
+        return;
     }
     pid_t pid1 = fork();
     if (pid1 < 0) {
         perror("fork");
-        exit(EXIT_FAILURE);
-    } else if (pid1 == 0) {
+        return;
+    }
+    if (pid1 == 0) {
         dup2(fd[1], STDOUT_FILENO);
         close(fd[0]);
         close(fd[1]);
-        setup_redirection_and_exec(left_args);
-        fprintf(stderr, "%s: command not found\n", left_args[0]);
-        exit(EXIT_FAILURE);
+        runRedirectExec(left);
+        _exit(1);
     }
     pid_t pid2 = fork();
     if (pid2 < 0) {
         perror("fork");
-        exit(EXIT_FAILURE);
-    } else if (pid2 == 0) {
+        return;
+    }
+    if (pid2 == 0) {
         dup2(fd[0], STDIN_FILENO);
         close(fd[0]);
         close(fd[1]);
-        setup_redirection_and_exec(right_args);
-        fprintf(stderr, "%s: command not found\n", right_args[0]);
-        exit(EXIT_FAILURE);
+        runRedirectExec(right);
+        _exit(1);
     }
     close(fd[0]);
     close(fd[1]);
-    int status;
-    waitpid(pid1, &status, 0);
-    waitpid(pid2, &status, 0);
+    waitpid(pid1, NULL, 0);
+    waitpid(pid2, NULL, 0);
 }
 
-/* Execute a single command segment (without ";" separation) */
-void process_command(char **args) {
-    int i = 0;
-    while (args[i] != NULL) {
-        if (strcmp(args[i], "|") == 0) {
-            execute_pipe(args);
-            return;
-        }
-        i++;
+// Checks if the first argument is exit, cd, or prev. If so, handles it and returns 1; otherwise 0.
+static int checkBuiltIn(char *argv[]) {
+    if (!argv[0]) return 0;
+    if (strcmp(argv[0], "exit") == 0) {
+        printf("Bye bye.\n");
+        exit(0);
     }
-    execute_external(args);
+    if (strcmp(argv[0], "cd") == 0) {
+        char *dir = argv[1] ? argv[1] : getenv("HOME");
+        if (!dir) dir = "/";
+        if (chdir(dir) != 0) {
+            perror("chdir");
+        }
+        return 1;
+    }
+    if (strcmp(argv[0], "prev") == 0) {
+        if (!*prevCommand) return 1;
+        char tokens2D[MAX_TOKENS][MAX_INPUT];
+        int numPrev = 0;
+        tokenize(prevCommand, tokens2D, &numPrev);
+        if (numPrev > 0) {
+            char *tmpArgs[MAX_TOKENS];
+            for (int i = 0; i < numPrev; i++) {
+                tmpArgs[i] = tokens2D[i];
+            }
+            tmpArgs[numPrev] = NULL;
+            for (int i = 0; tmpArgs[i]; i++) {
+                if (strcmp(tmpArgs[i], "|") == 0) {
+                    runPipe(tmpArgs);
+                    return 1;
+                }
+            }
+            runSimpleCommand(tmpArgs);
+        }
+        return 1;
+    }
+    return 0;
 }
 
-int main(int argc, char **argv) {
+// If it's not built-in, check for '|', then runPipe or runSimpleCommand.
+static void runCommand(char *argv[]) {
+    if (!checkBuiltIn(argv)) {
+        for (int i = 0; argv[i]; i++) {
+            if (strcmp(argv[i], "|") == 0) {
+                runPipe(argv);
+                return;
+            }
+        }
+        runSimpleCommand(argv);
+    }
+}
+
+int main(void) {
     printf("Welcome to mini-shell.\n");
-    char line[MAX_INPUT];
     while (1) {
         printf("shell $ ");
         fflush(stdout);
-        if (fgets(line, MAX_INPUT, stdin) == NULL) {
-            printf("\nBye bye.\n");
+        char line[MAX_INPUT];
+        if (!fgets(line, sizeof(line), stdin)) {
             break;
         }
         line[strcspn(line, "\n")] = '\0';
-        if (strlen(line) == 0)
-            continue;
-
+        if (!*line) continue;
         if (strcmp(line, "prev") != 0) {
-            if (prevCommand)
-                free(prevCommand);
-            prevCommand = strdup(line);
+            strncpy(prevCommand, line, sizeof(prevCommand) - 1);
+            prevCommand[sizeof(prevCommand) - 1] = '\0';
         }
-
+        char tokens2D[MAX_TOKENS][MAX_INPUT];
         int numTokens = 0;
-        char **tokens = tokenize(line, &numTokens);
-        if (numTokens == 0) {
-            free(tokens);
-            continue;
-        }
+        tokenize(line, tokens2D, &numTokens);
+        if (numTokens == 0) continue;
         int start = 0;
         while (start < numTokens) {
             int end = start;
-            while (end < numTokens && strcmp(tokens[end], ";") != 0)
+            while (end < numTokens && strcmp(tokens2D[end], ";") != 0) {
                 end++;
-            int cmdArgCount = end - start;
-            char **cmdArgs = malloc((cmdArgCount + 1) * sizeof(char *));
-            if (!cmdArgs) {
-                perror("malloc");
-                exit(EXIT_FAILURE);
             }
-            for (int k = 0; k < cmdArgCount; k++) {
-                cmdArgs[k] = tokens[start + k];
+            if (end > start) {
+                char *args[MAX_TOKENS];
+                int c = 0;
+                for (int i = start; i < end; i++) {
+                    args[c++] = tokens2D[i];
+                }
+                args[c] = NULL;
+                runCommand(args);
             }
-            cmdArgs[cmdArgCount] = NULL;
-            if (cmdArgs[0] != NULL && run_builtin(cmdArgs) == 0) {
-                process_command(cmdArgs);
-            }
-            free(cmdArgs);
             start = end + 1;
         }
-        for (int k = 0; k < numTokens; k++)
-            free(tokens[k]);
-        free(tokens);
     }
-    if (prevCommand)
-        free(prevCommand);
     return 0;
 }
