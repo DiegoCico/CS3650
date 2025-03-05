@@ -1,0 +1,4 @@
+docker compose up -d
+
+docker compose exec cs3650 bash
+

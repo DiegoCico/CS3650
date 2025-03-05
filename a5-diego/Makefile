@@ -33,8 +33,12 @@ $(TESTS): CFLAGS:=$(CFLAGS) -Wl,--wrap=sbrk
 $(TESTS): %: %.o mymalloc.o sbrk_stats.o
 	$(CC) $(CFLAGS) $^ -o $@
 
-test: clean_tests $(TESTS)
+tests/simpleTest: tests/simpleTest.c mymalloc.o
+	$(CC) $(CFLAGS) $^ -o $@
+
+test: clean_tests $(TESTS) tests/simpleTest
 	$(foreach t,$(TESTS),$(t)${\n})
+	./tests/simpleTest
 
 $(DEMO_TESTS): tests/demo_%: tests/%.c mymalloc.o
 	$(CC) $(CFLAGS) $^ -o $@
@@ -54,4 +58,4 @@ clean: clean_tests clean_demos
 clean_tests:
 	rm -f tests/*.o
 	rm -f $(TESTS)
-
+	rm -f tests/simpleTest

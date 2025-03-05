@@ -1,45 +1,68 @@
 #define _DEFAULT_SOURCE
 #define _BSD_SOURCE 
-#include <malloc.h> 
-#include <stdio.h> 
+#include <unistd.h>
+#include <stdio.h>
+#include <debug.h>
 
-// Include any other headers we need here
+typedef struct block {
+    size_t size;        
+    struct block *next; 
+    int free;          
+} block_t;
 
-// NOTE: You should NOT include <stdlib.h> in your final implementation
+#define BLOCK_SIZE sizeof(block_t)
 
-#include <debug.h> // definition of debug_printf
+block_t *free_list = NULL; 
 
+/*
+ * mymalloc -  memory of size `s`
+ * Looks for free space, if not found, gets more memory.
+ */
 void *mymalloc(size_t s) {
-
-  void *p = (void *) malloc(s); // In your solution no calls to malloc should be
-                               // made! Determine how you will request memory :)
-
-  if (!p) {
-    // We are out of memory
-    // if we get NULL back from malloc
-  }
-  debug_printf("malloc %zu bytes\n", s);
-
-  return p;
+    block_t *current = free_list, *prev = NULL;
+    while (current && !(current->free && current->size >= s)) {
+        prev = current;
+        current = current->next;
+    }
+    if (current) { // a free block
+        current->free = 0;
+        debug_printf("Malloc %zu\n", s);
+        return (void *)(current + 1);
+    }
+    // No free block, get more memory
+    void *p = sbrk(s + BLOCK_SIZE);
+    if (p == (void *)-1) return NULL;
+    block_t *new_block = (block_t *)p;
+    new_block->size = s;
+    new_block->free = 0;
+    new_block->next = NULL;
+    if (prev) prev->next = new_block;
+    else free_list = new_block;
+    debug_printf("Malloc %zu\n", s);
+    return (void *)(new_block + 1);
 }
 
-void *mycalloc(size_t nmemb, size_t s) {
-
-  void *p = (void *) calloc(nmemb, s); // In your solution no calls to calloc should be
-                                       // made! Determine how you will request memory :)
-
-  if (!p) {
-    // We are out of memory
-    // if we get NULL back from malloc
-  }
-  debug_printf("calloc %zu bytes\n", s);
-
-  return p;
+/*
+ * mycalloc - `mem * s` bytes, sets to zero
+ */
+void *mycalloc(size_t mem, size_t s) {
+    size_t total_size = mem * s;
+    void *p = mymalloc(total_size);
+    if (p) {
+        char *ptr = (char *)p;
+        for (size_t i = 0; i < total_size; i++) ptr[i] = 0;
+        debug_printf("Calloc %zu\n", total_size);
+    }
+    return p;
 }
 
+/*
+ * myfree - Frees memory block
+ * Marks block as free so it can be reused.
+ */
 void myfree(void *ptr) {
-  debug_printf("Freed some memory\n");
-
-  // Replace the free below with your own free implementation
-  free(ptr);
+    if (!ptr) return;
+    block_t *block_ptr = (block_t *)ptr - 1;
+    block_ptr->free = 1;
+    debug_printf("Freed %zu\n", block_ptr->size);
 }
