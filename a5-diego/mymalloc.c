@@ -15,7 +15,7 @@ typedef struct block {
 block_t *free_list = NULL; 
 
 /*
- * mymalloc -  memory of size `s`
+ * memory of size `s`
  * Looks for free space, if not found, gets more memory.
  */
 void *mymalloc(size_t s) {
@@ -24,7 +24,7 @@ void *mymalloc(size_t s) {
         prev = current;
         current = current->next;
     }
-    if (current) { // a free block
+    if (current) { // if it is a free block
         current->free = 0;
         debug_printf("Malloc %zu\n", s);
         return (void *)(current + 1);
@@ -43,7 +43,7 @@ void *mymalloc(size_t s) {
 }
 
 /*
- * mycalloc - `mem * s` bytes, sets to zero
+ * bytes, sets to zero
  */
 void *mycalloc(size_t mem, size_t s) {
     size_t total_size = mem * s;
@@ -57,7 +57,7 @@ void *mycalloc(size_t mem, size_t s) {
 }
 
 /*
- * myfree - Frees memory block
+ * Frees memory block
  * Marks block as free so it can be reused.
  */
 void myfree(void *ptr) {
