@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "string.h": "c",
-        "malloc.h": "c"
+        "malloc.h": "c",
+        "assert.h": "c"
     }
 }
