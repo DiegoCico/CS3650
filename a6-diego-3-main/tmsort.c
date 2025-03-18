@@ -31,14 +31,6 @@ typedef struct {
 /** The number of threads to be used for sorting. Default: 1 */
 int thread_count = 1;
 
-
-/** Function prototypes */
-// void *threaded_merge_sort(void *args);
-// void merge_sort_aux(long nums[], int from, int to, long target[]);
-// void merge(long nums[], int from, int mid, int to, long target[]);
-// long *merge_sort(long nums[], int count);
-// int allocate_load_array(int argc, char **argv, long **array);
-
 /**
  * Compute the delta between the given timevals in seconds.
  */
@@ -79,14 +71,8 @@ void merge(long nums[], int from, int mid, int to, long target[]) {
     }
 }
 
-/**
- * Threaded function for merge sort.
- */
-void *threaded_merge_sort(void *args) {
-    SortA *data = (SortA *)args;
-    merge_sort_aux(data->nums, data->from, data->to, data->target);
-    return NULL;
-}
+// Declaring the function so merge_sort_aux can use it
+void *threaded_merge_sort(void *args);
 
 /**
  * Sort the given slice of nums into target.
@@ -116,6 +102,15 @@ void merge_sort_aux(long nums[], int from, int to, long target[]) {
     }
 
     merge(nums, from, mid, to, target);
+}
+
+/**
+ * Threaded function for merge sort.
+ */
+void *threaded_merge_sort(void *args) {
+    SortA *data = (SortA *)args;
+    merge_sort_aux(data->nums, data->from, data->to, data->target);
+    return NULL;
 }
 
 /**
