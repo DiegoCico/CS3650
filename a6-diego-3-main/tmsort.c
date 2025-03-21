@@ -11,6 +11,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <assert.h>
+#include "tsmort.h"
 
 #define tty_printf(...) (isatty(1) && isatty(0) ? printf(__VA_ARGS__) : 0)
 
@@ -70,9 +71,6 @@ void merge(long nums[], int from, int mid, int to, long target[]) {
         memmove(&target[i], &nums[right], (to - right) * sizeof(long));
     }
 }
-
-// Declaring the function so merge_sort_aux can use it
-void *threaded_merge_sort(void *args);
 
 /**
  * Sort the given slice of nums into target.
