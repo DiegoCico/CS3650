@@ -4,13 +4,13 @@
 #include <sys/mman.h>
 #include <pthread.h>
 #include <assert.h>
-#include "debug.h"    // use your provided debug_printf macro
-#include "malloc.h"   // contains the redefines for malloc, free, etc.
+#include "debug.h"   
+#include "malloc.h"  
 
 typedef struct block {
-    size_t size;         // size of user data (not including header)
-    struct block *next;  // next block in free list
-    int free;            // 1 if free, 0 if allocated
+    size_t size;       
+    struct block *next;  
+    int free;            
 } block_t;
 
 #define BLOCK_SIZE sizeof(block_t)
@@ -19,7 +19,7 @@ block_t *free_list = NULL;
 pthread_mutex_t global_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /*
- * Helper: Insert block into free list sorted by address.
+ * Insert block into free list sorted by address.
  */
 void insert_free_block(block_t *block) {
     block->free = 1;
@@ -37,7 +37,7 @@ void insert_free_block(block_t *block) {
 }
 
 /*
- * Helper: join adjacent free blocks.
+ * join adjacent free blocks.
  */
 void join_free_list() {
     block_t *curr = free_list;
@@ -56,27 +56,30 @@ void join_free_list() {
 }
 
 /*
- * Malloc implementation using mmap and a free list.
+ * implementation using mmap and a free list.
  */
 void *mymalloc(size_t s) {
     pthread_mutex_lock(&global_lock);
     size_t page_size = sysconf(_SC_PAGE_SIZE);
     block_t *current = free_list, *prev = NULL;
-
-    // Check if the request is for a small block.
-    if (s <= page_size - BLOCK_SIZE) {
-        // Search free list for a suitable block.
-        while (current && !(current->free && current->size >= s)) {
-            prev = current;
-            current = current->next;
-        }
-        if (current) {  // Found a free block.
+    
+    while (current) {
+        if (current->free && current->size >= s) {
+            // Remove block from free list
+            if (prev)
+                prev->next = current->next;
+            else
+                free_list = current->next;
             current->free = 0;
-            debug_printf("malloc: block of size %zu found\n", current->size);
             pthread_mutex_unlock(&global_lock);
             return (void *)(current + 1);
         }
-        // No free block found; request a new page via mmap.
+        prev = current;
+        current = current->next;
+    }
+    
+    // if no free block found allocate a new block
+    if (s <= page_size - BLOCK_SIZE) {
         debug_printf("malloc: block of size %zu not found - calling mmap\n", s);
         void *p = mmap(NULL, page_size, PROT_READ | PROT_WRITE,
                        MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -85,15 +88,13 @@ void *mymalloc(size_t s) {
             return NULL;
         }
         block_t *new_block = (block_t *)p;
-        // Initially, the whole page (minus header) is available.
         new_block->size = page_size - BLOCK_SIZE;
         new_block->free = 0;
         new_block->next = NULL;
-        // If the new block is larger than needed, try to split it.
+        // If the block is larger than needed, try splitting it into different blocks
         if (new_block->size >= s + BLOCK_SIZE + 1) {
             size_t remaining = new_block->size - s - BLOCK_SIZE;
             new_block->size = s;
-            // Create a new free block from the remaining memory.
             block_t *split_block = (block_t *)((char *)(new_block + 1) + s);
             split_block->size = remaining;
             split_block->free = 1;
@@ -104,9 +105,8 @@ void *mymalloc(size_t s) {
         }
         pthread_mutex_unlock(&global_lock);
         return (void *)(new_block + 1);
-    } 
-    else {  
-        // For large blocks: allocate enough pages to hold (header + data).
+    } else {
+        // For large blocks
         size_t total_size = s + BLOCK_SIZE;
         size_t num_pages = total_size / page_size;
         if (total_size % page_size != 0)
@@ -135,7 +135,7 @@ void *mycalloc(size_t nmemb, size_t s) {
     size_t total = nmemb * s;
     void *ptr = mymalloc(total);
     if (ptr) {
-        // Zero out the user memory (do not overwrite the header)
+        // Zero out the user memory 
         char *cptr = (char *)ptr;
         for (size_t i = 0; i < total; i++) {
             cptr[i] = 0;
@@ -146,7 +146,7 @@ void *mycalloc(size_t nmemb, size_t s) {
 }
 
 /*
- * Free: either return a small block to the free list or
+ * either return a small block to the free list or
  * munmap a large block.
  */
 void myfree(void *ptr) {
@@ -154,20 +154,9 @@ void myfree(void *ptr) {
         return;
     pthread_mutex_lock(&global_lock);
     block_t *block_ptr = (block_t *)ptr - 1;
-    size_t page_size = sysconf(_SC_PAGE_SIZE);
-    
-    // Check if this is a small block.
-    if (block_ptr->size <= page_size - BLOCK_SIZE) {
-        block_ptr->free = 1;
-        insert_free_block(block_ptr);
-        join_free_list();
-        debug_printf("Freed %zu\n", block_ptr->size);
-    } else {
-        // For large blocks, unmap the entire region.
-        size_t total_size = block_ptr->size + BLOCK_SIZE;
-        debug_printf("free: munmap region of size %zu\n", total_size);
-        munmap((void *)block_ptr, total_size);
-        debug_printf("Freed %zu\n", block_ptr->size);
-    }
+    block_ptr->free = 1;
+    insert_free_block(block_ptr);
+    join_free_list();
+    debug_printf("Freed %zu\n", block_ptr->size);
     pthread_mutex_unlock(&global_lock);
 }
