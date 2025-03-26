@@ -16,7 +16,7 @@ typedef struct block {
 #define BLOCK_SIZE sizeof(block_t)
 
 block_t *free_list = NULL; 
-pthread_mutex_t global_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t global_lock;
 
 /*
  * Insert block into free list sorted by address.
@@ -36,6 +36,7 @@ void insert_free_block(block_t *block) {
     }
 }
 
+
 /*
  * join adjacent free blocks.
  */
@@ -54,6 +55,7 @@ void join_free_list() {
         }
     }
 }
+
 
 /*
  * implementation using mmap and a free list.
@@ -129,7 +131,7 @@ void *mymalloc(size_t s) {
 }
 
 /*
- * Calloc: allocate memory and set to zero.
+ * allocate memory and set to zero.
  */
 void *mycalloc(size_t nmemb, size_t s) {
     size_t total = nmemb * s;
@@ -144,6 +146,7 @@ void *mycalloc(size_t nmemb, size_t s) {
     }
     return ptr;
 }
+
 
 /*
  * either return a small block to the free list or
