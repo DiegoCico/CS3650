@@ -15,6 +15,7 @@
 #include "sleeplock.h"
 #include "file.h"
 #include "fcntl.h"
+#include "stat.h"
 
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
@@ -442,3 +443,32 @@ sys_pipe(void)
   fd[1] = fd1;
   return 0;
 }
+
+int
+sys_getiostats(void)
+{
+    int fd;
+    struct iostats *ustats;
+    struct file *f;
+
+    // getting the n-th system call argument  and validating it
+    if(argfd(0, &fd, &f) < 0)
+        return -1;
+    // gettomg a pointer passed from user and makes sure that it’s a valid pointer.
+    if(argptr(1, (void *)&ustats, sizeof(*ustats)) < 0)
+        return -1;
+
+    // getting the read and write bytes
+    struct iostats kstats;
+    kstats.read_bytes = f->read_bytes;
+    kstats.write_bytes = f->write_bytes;
+
+    // coping kernel stats to user-provided memory
+    int copy_result = copyout(myproc()->pgdir, (uint)ustats, (char *)&kstats, sizeof(kstats));
+    if (copy_result < 0)
+        return -1;
+
+
+    return 0;
+}
+

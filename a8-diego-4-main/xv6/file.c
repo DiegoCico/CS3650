@@ -32,6 +32,8 @@ filealloc(void)
   for(f = ftable.file; f < ftable.file + NFILE; f++){
     if(f->ref == 0){
       f->ref = 1;
+      f->read_bytes = 0;   
+      f->write_bytes = 0;  
       release(&ftable.lock);
       return f;
     }
@@ -104,13 +106,16 @@ fileread(struct file *f, char *addr, int n)
     return piperead(f->pipe, addr, n);
   if(f->type == FD_INODE){
     ilock(f->ip);
-    if((r = readi(f->ip, addr, f->off, n)) > 0)
+    if((r = readi(f->ip, addr, f->off, n)) > 0){
       f->off += r;
+      f->read_bytes += r;  
+    }
     iunlock(f->ip);
     return r;
   }
   panic("fileread");
 }
+
 
 //PAGEBREAK!
 // Write to file f.
@@ -139,8 +144,10 @@ filewrite(struct file *f, char *addr, int n)
 
       begin_op();
       ilock(f->ip);
-      if ((r = writei(f->ip, addr + i, f->off, n1)) > 0)
+      if ((r = writei(f->ip, addr + i, f->off, n1)) > 0) {
         f->off += r;
+        f->write_bytes += r;  
+      }
       iunlock(f->ip);
       end_op();
 
