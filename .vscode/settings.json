@@ -2,6 +2,10 @@
     "files.associations": {
         "string.h": "c",
         "malloc.h": "c",
-        "assert.h": "c"
+        "assert.h": "c",
+        "blocks.h": "c",
+        "bitmap.h": "c",
+        "slist.h": "c",
+        "mman.h": "c"
     }
 }
