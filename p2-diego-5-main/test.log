@@ -1,8 +1,7 @@
 make[1]: Entering directory '/home/ubuntu/p2-diego-5-main'
 mkdir -p mnt || true
 ./nufs -s -f mnt data.nufs
-fuse: invalid argument `data.nufs'
-Starting FUSE filesystem with image: data.nufs
+fusermount: mounting over filesystem type 0x6a656a63 is forbidden
 make[1]: *** [Makefile:21: mount] Error 1
 make[1]: Leaving directory '/home/ubuntu/p2-diego-5-main'
 make[1]: Entering directory '/home/ubuntu/p2-diego-5-main'
