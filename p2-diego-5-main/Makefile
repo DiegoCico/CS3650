@@ -15,6 +15,8 @@ nufs: $(OBJS)
 clean: unmount
 	rm -f nufs *.o test.log data.nufs
 	rmdir mnt || true
+	rm mnt/*
+	rmdir mnt
 
 mount: nufs
 	mkdir -p mnt || true
@@ -22,6 +24,7 @@ mount: nufs
 
 unmount:
 	fusermount -u mnt || true
+	rm -rf mnt/*
 
 test: nufs
 	perl test.pl

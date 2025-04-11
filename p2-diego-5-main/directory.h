@@ -1,8 +1,3 @@
-// Directory manipulation functions.
-//
-// Feel free to use as inspiration. Provided as-is.
-
-// Based on cs3650 starter code
 #ifndef DIRECTORY_H
 #define DIRECTORY_H
 
@@ -12,11 +7,12 @@
 #include "inode.h"
 #include "slist.h"
 
-typedef struct dirent {
+/* Custom directory entry structure */
+typedef struct fs_dirent {
   char name[DIR_NAME_LENGTH];
   int inum;
   char _reserved[12];
-} dirent_t;
+} fs_dirent_t;
 
 void directory_init();
 int directory_lookup(inode_t *di, const char *name);

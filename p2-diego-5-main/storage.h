@@ -1,9 +1,3 @@
-// Disk storage abstracttion.
-//
-// Feel free to use as inspiration. Provided as-is.
-
-// based on cs3650 starter code
-
 #ifndef NUFS_STORAGE_H
 #define NUFS_STORAGE_H
 
@@ -11,7 +5,6 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-
 #include "slist.h"
 
 void storage_init(const char *path);
@@ -25,5 +18,9 @@ int storage_link(const char *from, const char *to);
 int storage_rename(const char *from, const char *to);
 int storage_set_time(const char *path, const struct timespec ts[2]);
 slist_t *storage_list(const char *path);
+
+/* Block-level operations */
+int storage_read_block(int bnum, char *buf, int offset, int size);
+int storage_write_block(int bnum, const char *buf, int offset, int size);
 
 #endif

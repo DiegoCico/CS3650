@@ -1,10 +1,13 @@
-make[1]: Entering directory '/home/ubuntu/p2-diego-5-main'
+make[1]: Entering directory '/workspaces/CS3650/p2-diego-5-main'
 mkdir -p mnt || true
 ./nufs -s -f mnt data.nufs
-fusermount: mounting over filesystem type 0x6a656a63 is forbidden
-make[1]: *** [Makefile:21: mount] Error 1
-make[1]: Leaving directory '/home/ubuntu/p2-diego-5-main'
-make[1]: Entering directory '/home/ubuntu/p2-diego-5-main'
+fuse: invalid argument `data.nufs'
+Storage initialized. Disk image: data.nufs
+Mounting filesystem with disk image: data.nufs
+make[1]: *** [Makefile:23: mount] Error 1
+make[1]: Leaving directory '/workspaces/CS3650/p2-diego-5-main'
+make[1]: Entering directory '/workspaces/CS3650/p2-diego-5-main'
 fusermount -u mnt || true
-fusermount: entry for /home/ubuntu/p2-diego-5-main/mnt not found in /etc/mtab
-make[1]: Leaving directory '/home/ubuntu/p2-diego-5-main'
+fusermount: entry for /workspaces/CS3650/p2-diego-5-main/mnt not found in /etc/mtab
+rm -rf mnt/*
+make[1]: Leaving directory '/workspaces/CS3650/p2-diego-5-main'
