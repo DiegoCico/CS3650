@@ -427,4 +427,3 @@
      printf("Mounting filesystem with disk image: %s\n", argv[argc - 1]);
      return fuse_main(argc, argv, &nufs_ops, NULL);
  }
- 
