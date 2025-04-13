@@ -11,10 +11,6 @@
 
 #define BLOCK_SIZE 4096
 
-void directory_init() {
-    // Optional: any global directory initialization code.
-}
-
 /* Look up an entry in the directory represented by inode *di.
  * Returns the inode number if found, or -ENOENT if not found.
  */

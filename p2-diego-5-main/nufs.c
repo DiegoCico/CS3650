@@ -411,19 +411,36 @@
  struct fuse_operations nufs_ops;
  
  int main(int argc, char *argv[]) {
-     if (argc < 3) {
-         fprintf(stderr, "Usage: %s <mountpoint> <disk image>\n", argv[0]);
-         exit(1);
-     }
-     storage_init(argv[argc - 1]);
-     inode_t *root = get_inode(0);
-     if (root == NULL) {
-         int inum = alloc_inode();
-         root = get_inode(inum);
-         root->mode = 040755;   // directory mode
-         root->size = 0;
-     }
-     nufs_init_ops(&nufs_ops);
-     printf("Mounting filesystem with disk image: %s\n", argv[argc - 1]);
-     return fuse_main(argc, argv, &nufs_ops, NULL);
- }
+    if (argc < 3) {
+        fprintf(stderr, "Usage: %s <mountpoint> <disk image>\n", argv[0]);
+        exit(1);
+    }
+    // The last argument is the disk image file.
+    const char *disk_image = argv[argc - 1];
+    storage_init(disk_image);
+
+    inode_t *root = get_inode(0);
+    if (root == NULL) {
+        int inum = alloc_inode();
+        root = get_inode(inum);
+        root->mode = 040755;   // directory mode
+        root->size = 0;
+    }
+    nufs_init_ops(&nufs_ops);
+    printf("Mounting filesystem with disk image: %s\n", disk_image);
+
+    // Prepare a new argument list for FUSE by excluding the disk image.
+    int fuse_argc = argc - 1;  // exclude the last argument (disk image)
+    char **fuse_argv = malloc(sizeof(char*) * fuse_argc);
+    if (!fuse_argv) {
+        perror("malloc");
+        exit(1);
+    }
+    for (int i = 0; i < fuse_argc; i++) {
+        fuse_argv[i] = argv[i];
+    }
+
+    int ret = fuse_main(fuse_argc, fuse_argv, &nufs_ops, NULL);
+    free(fuse_argv);
+    return ret;
+}
