@@ -1,0 +1,44 @@
+make[1]: Entering directory '/workspaces/CS3650/p2-diego-5-main'
+mkdir -p mnt || true
+./nufs -s -f mnt data.nufs
+make[1]: Entering directory '/workspaces/CS3650/p2-diego-5-main'
+fusermount -u mnt || true
+Storage set up. Disk image: data.nufs
+Mounting filesystem with disk image: data.nufs
+getattr(/large.txt) -> -ENOENT
++ alloc_block() -> 1
+mknod(/large.txt) -> inode 1 created
+getattr(/large.txt) -> (mode: 100644, size: 0)
+open(/large.txt) -> successful
+ioctl(/large.txt, 21505, ...) -> not implemented
++ alloc_block() -> 2
+write(/large.txt, 4096 bytes, @+0) -> 4096
++ alloc_block() -> 3
+write(/large.txt, 2049 bytes, @+4096) -> 2049
+getattr(/) -> (mode: 40755, size: 64)
+readdir(/) -> OK
+getattr(/large.txt) -> (mode: 100644, size: 6145)
+open(/large.txt) -> successful
+ioctl(/large.txt, 21505, ...) -> not implemented
+read(/large.txt, 8192 bytes, @+0) -> 6145
+getattr(/larger.txt) -> -ENOENT
+mknod(/larger.txt) -> inode 2 created
+getattr(/larger.txt) -> (mode: 100644, size: 0)
+open(/larger.txt) -> successful
+ioctl(/larger.txt, 21505, ...) -> not implemented
++ alloc_block() -> 4
+write(/larger.txt, 4096 bytes, @+0) -> 4096
++ alloc_block() -> 5
+write(/larger.txt, 4096 bytes, @+4096) -> 4096
++ alloc_block() -> 6
+write(/larger.txt, 4096 bytes, @+8192) -> 4096
++ alloc_block() -> 7
+write(/larger.txt, 2049 bytes, @+12288) -> 2049
+getattr(/) -> (mode: 40755, size: 128)
+readdir(/) -> OK
+getattr(/larger.txt) -> (mode: 100644, size: 14337)
+open(/larger.txt) -> successful
+ioctl(/larger.txt, 21505, ...) -> not implemented
+read(/larger.txt, 16384 bytes, @+0) -> 14337
+make[1]: Leaving directory '/workspaces/CS3650/p2-diego-5-main'
+make[1]: Leaving directory '/workspaces/CS3650/p2-diego-5-main'

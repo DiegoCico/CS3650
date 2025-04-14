@@ -5,43 +5,41 @@
 #include "storage.h"
 #include "blocks.h"
 
+// set up storage system with the disk image path
 void storage_init(const char *path) {
-    blocks_init(path);
-    printf("Storage initialized. Disk image: %s\n", path);
+    blocks_init(path); 
+    printf("Storage set up. Disk image: %s\n", path);
 }
 
+// get file stats
 int storage_stat(const char *path, struct stat *st) {
-    if (!st) return -1;
-    st->st_size = BLOCK_SIZE * 256;
+    if (!st) return -1; 
+    st->st_size = BLOCK_SIZE * 256; 
     return 0;
 }
 
+// read from block 0 starting at offset into buf
 int storage_read(const char *path, char *buf, size_t size, off_t offset) {
-    memcpy(buf, blocks_get_block(0) + offset, size);
-    return size;
+    memcpy(buf, blocks_get_block(0) + offset, size); // copy data into buf
+    return size; 
 }
 
+// write to block 0 starting at offset from buf
 int storage_write(const char *path, const char *buf, size_t size, off_t offset) {
-    memcpy(blocks_get_block(0) + offset, buf, size);
+    memcpy(blocks_get_block(0) + offset, buf, size); // copy data from buf
     return size;
 }
 
-int storage_truncate(const char *path, off_t size) { return 0; }
-int storage_mknod(const char *path, int mode) { return 0; }
-int storage_unlink(const char *path) { return 0; }
-int storage_link(const char *from, const char *to) { return 0; }
-int storage_rename(const char *from, const char *to) { return 0; }
-int storage_set_time(const char *path, const struct timespec ts[2]) { return 0; }
-slist_t *storage_list(const char *path) { return NULL; }
-
+// read a piece of a specific block into buf
 int storage_read_block(int bnum, char *buf, int offset, int size) {
-    void *block = blocks_get_block(bnum);
-    memcpy(buf, block + offset, size);
+    void *block = blocks_get_block(bnum); 
+    memcpy(buf, block + offset, size); // copy the data
     return size;
 }
 
+// write a piece of data into a specific block
 int storage_write_block(int bnum, const char *buf, int offset, int size) {
-    void *block = blocks_get_block(bnum);
-    memcpy(block + offset, buf, size);
-    return size;
+    void *block = blocks_get_block(bnum); 
+    memcpy(block + offset, buf, size); // write the data
+    return size; 
 }

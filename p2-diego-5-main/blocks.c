@@ -14,7 +14,7 @@
  #include <sys/stat.h>
  #include <sys/types.h>
  #include <unistd.h>
-
+ #include <stdlib.h>
  
  #include "bitmap.h"
  #include "blocks.h"

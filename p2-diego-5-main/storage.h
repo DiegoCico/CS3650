@@ -18,8 +18,6 @@ int storage_link(const char *from, const char *to);
 int storage_rename(const char *from, const char *to);
 int storage_set_time(const char *path, const struct timespec ts[2]);
 slist_t *storage_list(const char *path);
-
-/* Block-level operations */
 int storage_read_block(int bnum, char *buf, int offset, int size);
 int storage_write_block(int bnum, const char *buf, int offset, int size);
 

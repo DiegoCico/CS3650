@@ -6,7 +6,7 @@
  */
 
  #include <assert.h>
- #include <dirent.h>   // for system dirent (do not confuse with our fs_dirent_t)
+ #include <dirent.h>  
  #include <errno.h>
  #include <stdio.h>
  #include <stdlib.h>
