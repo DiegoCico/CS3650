@@ -1,7 +1,3 @@
-/**
- * @file blocks.h
- * A block-based abstraction over a disk image file.
- */
 #ifndef BLOCKS_H
 #define BLOCKS_H
 

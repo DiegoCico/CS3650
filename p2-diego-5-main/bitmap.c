@@ -1,7 +1,3 @@
-/**
- * @file bitmap.c
- * Bitmap implementation.
- */
 #include <stdint.h>
 #include <stdio.h>
 #include "bitmap.h"

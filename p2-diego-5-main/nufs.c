@@ -12,7 +12,6 @@
 #define FUSE_USE_VERSION 26
 #include <fuse.h>
 
-/* include custom filesystem helper headers */
 #include "blocks.h"
 #include "bitmap.h"
 #include "inode.h"
@@ -66,14 +65,14 @@ inode_t *path_lookup(const char *path) {
     return curr;
 }
 
-/* checks if path exists (used by access()) */
+/* checks if path exists */
 int nufs_access(const char *path, int mask) {
     inode_t *node = path_lookup(path);
     if (node == NULL) return -ENOENT;
     return 0;
 }
 
-/* gets file metadata like size, mode, etc. */
+/* gets file metadata like size, mode, etc */
 int nufs_getattr(const char *path, struct stat *st) {
     inode_t *node = path_lookup(path);
     if (node == NULL) return -ENOENT;
@@ -196,7 +195,7 @@ int nufs_rename(const char *from, const char *to) {
     return directory_put(to_parent_inode, to_child, inum);
 }
 
-/* changes the mode (permissions) of a file */
+/* changes the permissions of a file */
 int nufs_chmod(const char *path, mode_t mode) {
     inode_t *node = path_lookup(path);
     if (!node) return -ENOENT;
@@ -278,7 +277,7 @@ int nufs_write(const char *path, const char *buf, size_t size, off_t offset,
     return write_to_inode(node, buf, size, offset);
 }
 
-/* changes file size (shrinks or grows it) */
+/* changes file size, shrinnk orit grow s */
 int nufs_truncate(const char *path, off_t size) {
     inode_t *node = path_lookup(path);
     if (!node) return -ENOENT;
@@ -288,21 +287,21 @@ int nufs_truncate(const char *path, off_t size) {
     return 0;
 }
 
-/* updates file timestamps (not actually implemented) */
+/* updates file timestamps */
 int nufs_utimens(const char *path, const struct timespec ts[2]) {
     inode_t *node = path_lookup(path);
     if (!node) return -ENOENT;
     return 0;
 }
 
-/* opens a file (no-op here) */
+/* opens a file */
 int nufs_open(const char *path, struct fuse_file_info *fi) {
     inode_t *node = path_lookup(path);
     if (!node) return -ENOENT;
     return 0;
 }
 
-/* stub for ioctl (not used) */
+/* stub for ioctl */
 int nufs_ioctl(const char *path, int cmd, void *arg, struct fuse_file_info *fi,
                unsigned int flags, void *data) {
     return -ENOSYS;
@@ -328,7 +327,7 @@ void nufs_init_ops(struct fuse_operations *ops) {
     ops->ioctl    = nufs_ioctl;
 }
 
-/* main function: mounts the fs and hands over control to fuse */
+/* mounts the fs and hands over control to fuse */
 int main(int argc, char *argv[]) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <mountpoint> <disk image>\n", argv[0]);

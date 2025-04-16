@@ -1,7 +1,3 @@
-/**
- * @file bitmap.h
- * A bitmap interface.
- */
 #ifndef BITMAP_H
 #define BITMAP_H
 

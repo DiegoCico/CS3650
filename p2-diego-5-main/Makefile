@@ -7,7 +7,7 @@ CFLAGS := -g `pkg-config fuse --cflags`
 LDLIBS := `pkg-config fuse --libs`
 
 nufs: $(OBJS)
-	gcc $(CLFAGS) -o $@ $^ $(LDLIBS)
+	gcc $(CFLAGS) -o $@ $^ $(LDLIBS)
 
 %.o: %.c $(HDRS)
 	gcc $(CFLAGS) -c -o $@ $<

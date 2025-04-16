@@ -1,8 +1,3 @@
-/**
- * @file blocks.c
- * Implementation of a block-based abstraction over a disk image file.
- */
-
  #define _GNU_SOURCE
  #include <string.h>
  #include <assert.h>
