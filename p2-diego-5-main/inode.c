@@ -25,7 +25,7 @@ void print_inode(inode_t *node) {
 inode_t *get_inode(int inum) {
     if (inum < 0 || inum >= NUM_INODES) return NULL;
     if (!inode_allocated[inum]) return NULL; // if not allocated
-    return &inode_table[inum]; // return pointer to it
+    return &inode_table[inum]; 
 }
 
 // find and allocate a free inode

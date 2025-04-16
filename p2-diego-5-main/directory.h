@@ -7,7 +7,6 @@
 #include "inode.h"
 #include "slist.h"
 
-/* Custom directory entry structure */
 typedef struct fs_dirent {
   char name[DIR_NAME_LENGTH];
   int inum;

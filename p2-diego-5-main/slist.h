@@ -1,7 +1,3 @@
-/**
- * @file slist.h
- * A simple linked list of pointers.
- */
 #ifndef SLIST_H
 #define SLIST_H
 
