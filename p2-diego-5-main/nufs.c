@@ -49,7 +49,7 @@ static void split_path(const char *path, char *parent, char *child) {
 /* traverses the filesystem to find inode of a given path */
 inode_t *path_lookup(const char *path) {
     if (strcmp(path, "/") == 0)
-        return get_inode(0);  // root is always inode 0
+        return get_inode(0);  
     char path_copy[256];
     strncpy(path_copy, path, sizeof(path_copy));
     path_copy[sizeof(path_copy)-1] = '\0';
@@ -78,11 +78,11 @@ int nufs_getattr(const char *path, struct stat *st) {
     inode_t *node = path_lookup(path);
     if (node == NULL) return -ENOENT;
     memset(st, 0, sizeof(struct stat));
-    st->st_uid = getuid();
-    st->st_gid = getgid();
-    st->st_size = node->size;
-    st->st_mode = (node->mode & 040000) ? 040755 : 0100644;
-    st->st_nlink = (node->mode & 040000) ? 2 : 1;
+    st->st_uid = getuid();   // sets file owner to current user
+    st->st_gid = getgid();  // sets file group to current user group
+    st->st_size = node->size; // sets file size from inode
+    st->st_mode = (node->mode & 040000) ? 040755 : 0100644;  // if it’s a dir, use dir perms else use regular file perms
+    st->st_nlink = (node->mode & 040000) ? 2 : 1;  // sets link count 2 for dirs 1 for files
     return 0;
 }
 
@@ -150,8 +150,6 @@ int nufs_unlink(const char *path) {
     free_inode(inum);
     return 0;
 }
-
-/* deletes a directory if it is empty */
 int nufs_rmdir(const char *path) {
     inode_t *dir_inode = path_lookup(path);
     if (!dir_inode || !(dir_inode->mode & 040000)) return -ENOTDIR;
@@ -162,14 +160,21 @@ int nufs_rmdir(const char *path) {
         return -ENOTEMPTY;
     }
 
-    char parent[256], child[256];
+    char parent[256];
+    char child[256];
     split_path(path, parent, child);
+
     inode_t *parent_inode = path_lookup(parent);
     if (!parent_inode) return -ENOENT;
-    directory_delete(parent_inode, child);
-    free_inode(0);  // NOTE: should free correct inode
+
+    int inum = directory_lookup(parent_inode, child); 
+    int rv = directory_delete(parent_inode, child);
+    if (rv < 0) return rv;
+
+    free_inode(inum); 
     return 0;
 }
+
 
 /* renames or moves a file from one path to another */
 int nufs_rename(const char *from, const char *to) {
