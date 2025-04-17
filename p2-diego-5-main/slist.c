@@ -1,7 +1,4 @@
-/**
- * @file slist.c
- * A simple linked list implementation.
- */
+// helper code
 #include <alloca.h>
 #include <stdlib.h>
 #include <string.h>

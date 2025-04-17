@@ -1,3 +1,4 @@
+// helper code
 #ifndef SLIST_H
 #define SLIST_H
 

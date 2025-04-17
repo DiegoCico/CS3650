@@ -1,3 +1,4 @@
+// helper code
 #include <stdint.h>
 #include <stdio.h>
 #include "bitmap.h"
