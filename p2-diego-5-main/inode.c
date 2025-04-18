@@ -92,7 +92,7 @@ int shrink_inode(inode_t *node, int size) {
     return 0;
 }
 
-// get the real block number used for a file's block index
+// get the real block number used for a file block index
 int inode_get_bnum(inode_t *node, int file_bnum) {
     if (!node) return -1;
     int inum = node - inode_table;

@@ -11,7 +11,7 @@
 
 #define BLOCK_SIZE 4096
 
-/* look up an entry in the directory represented by inode *di.
+/* look up an entry in the directory represented by inode.
  * returns the inode number if found, or -ENOENT if not found.
  */
 int directory_lookup(inode_t *di, const char *name) {
@@ -40,10 +40,10 @@ int directory_lookup(inode_t *di, const char *name) {
     }
 
     free(entries);
-    return -ENOENT;  // entry not found
+    return -ENOENT;  // not found
 }
 
-/* add a new entry (name and inode number) to a directory */
+/* add a new entry to a directory */
 int directory_put(inode_t *di, const char *name, int inum) {
     if (!di) return -ENOENT;
 
@@ -138,8 +138,8 @@ int directory_delete(inode_t *di, const char *name) {
     return 0;
 }
 
-/* return a singly-linked list of valid directory entries.
- * each list node contains a malloc'd copy of an fs_dirent_t struct.
+/* return a list of valid directory entries.
+ * each list node has a malloc'd copy of an fs_dirent_t struct.
  */
 slist_t *directory_list(const char *path) {
     extern inode_t *path_lookup(const char *);  // defined in another module
