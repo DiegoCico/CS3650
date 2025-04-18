@@ -8,9 +8,9 @@
 
 typedef struct inode {
   int refs;   // reference count
-  int mode;   // permission & type
+  int mode;   // permission 
   int size;   // file size in bytes
-  int block;  // primary block (if file fits within one block) or first block pointer
+  int block;  // primary block or first block pointer
 } inode_t;
 
 void print_inode(inode_t *node);
